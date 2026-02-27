@@ -308,6 +308,182 @@ async function computeFileChecksum(file) {
     return bytesToHex(new Uint8Array(hashBuffer));
 }
 
+// ─── QR Chain Verification (L3) ─────────────────────────────────────────────
+
+function loadJsQR() {
+    return new Promise((resolve, reject) => {
+        if (window.jsQR) { resolve(); return; }
+        const s = document.createElement('script');
+        s.src = 'js/vendor/jsqr.js';
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+    });
+}
+
+function bigEndianInt64(value) {
+    const bytes = new Uint8Array(8);
+    const big = BigInt(value);
+    for (let i = 0; i < 8; i++) {
+        bytes[i] = Number((big >> BigInt((7 - i) * 8)) & 0xFFn);
+    }
+    return bytes;
+}
+
+async function verifyChainContinuity(json, frames) {
+    // Sort frames by timestamp ascending
+    frames.sort((a, b) => a.timestamp - b.timestamp);
+
+    const saltBytes = hexToBytes(json.salt);
+    const initialHash = json.initialHashChainValue.toLowerCase();
+    let prevHash = null;
+    let matches = 0;
+
+    for (let i = 0; i < frames.length; i++) {
+        const frame = frames[i];
+
+        // First-frame direct-match rule
+        if (i === 0) {
+            if (initialHash.substring(0, frame.hashPrefix.length) === frame.hashPrefix) {
+                matches++;
+                prevHash = initialHash;
+                continue;
+            } else {
+                return {
+                    valid: false,
+                    breakAt: 0,
+                    expected: initialHash.substring(0, frame.hashPrefix.length),
+                    got: frame.hashPrefix
+                };
+            }
+        }
+
+        // Compute expected hash: SHA-256(prevHashBytes || timestampBytes || saltBytes)
+        const prevHashBytes = hexToBytes(prevHash);
+        const timestampBytes = bigEndianInt64(frame.timestamp);
+        const input = new Uint8Array(prevHashBytes.length + timestampBytes.length + saltBytes.length);
+        input.set(prevHashBytes, 0);
+        input.set(timestampBytes, prevHashBytes.length);
+        input.set(saltBytes, prevHashBytes.length + timestampBytes.length);
+
+        const hashBuffer = await crypto.subtle.digest('SHA-256', input);
+        const computedHash = bytesToHex(new Uint8Array(hashBuffer));
+
+        if (computedHash.substring(0, frame.hashPrefix.length) === frame.hashPrefix) {
+            matches++;
+            prevHash = computedHash;
+        } else {
+            return {
+                valid: false,
+                breakAt: i,
+                expected: computedHash.substring(0, frame.hashPrefix.length),
+                got: frame.hashPrefix
+            };
+        }
+    }
+
+    return { valid: true, matches: matches, checked: frames.length };
+}
+
+async function verifyQRChain(json, file) {
+    setResult('qrChainResult', 'running', 'LOADING QR SCANNER...', []);
+
+    try {
+        await loadJsQR();
+    } catch (err) {
+        setResult('qrChainResult', 'fail', 'QR CHAIN FAILED', [
+            { value: 'Failed to load jsQR library.' }
+        ]);
+        return;
+    }
+
+    setResult('qrChainResult', 'running', 'EXTRACTING QR CODES...', []);
+
+    const video = document.createElement('video');
+    video.muted = true;
+    video.playsInline = true;
+    const objectURL = URL.createObjectURL(file);
+    video.src = objectURL;
+
+    // Wait for metadata
+    await new Promise((resolve, reject) => {
+        video.addEventListener('loadedmetadata', resolve, { once: true });
+        video.addEventListener('error', () => reject(new Error('Failed to load video')), { once: true });
+    });
+
+    const duration = video.duration;
+    const totalFrames = Math.floor(duration); // 1fps
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+    const extractedFrames = [];
+
+    for (let i = 0; i < totalFrames; i++) {
+        const seekTime = i;
+        video.currentTime = seekTime;
+
+        await new Promise((resolve) => {
+            video.addEventListener('seeked', resolve, { once: true });
+        });
+
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const qrResult = jsQR(imageData.data, canvas.width, canvas.height);
+
+        if (qrResult && qrResult.data && qrResult.data.startsWith('AP|')) {
+            const parts = qrResult.data.split('|');
+            if (parts.length >= 3) {
+                extractedFrames.push({
+                    timestamp: parseInt(parts[1], 10),
+                    hashPrefix: parts[2].toLowerCase()
+                });
+            }
+        }
+
+        setProgress('qrChainResult', 'SCANNING VIDEO FRAMES', i + 1, totalFrames);
+    }
+
+    URL.revokeObjectURL(objectURL);
+
+    if (extractedFrames.length === 0) {
+        setResult('qrChainResult', 'fail', 'QR CHAIN FAILED', [
+            { value: 'No QR codes found in video. Expected AP|timestamp|hash format.' }
+        ]);
+        return;
+    }
+
+    // Deduplicate by timestamp (keep first occurrence)
+    const seen = new Set();
+    const uniqueFrames = [];
+    for (const frame of extractedFrames) {
+        if (!seen.has(frame.timestamp)) {
+            seen.add(frame.timestamp);
+            uniqueFrames.push(frame);
+        }
+    }
+
+    setResult('qrChainResult', 'running', 'VERIFYING HASH CHAIN...', [
+        { label: 'QR Codes Found', value: String(uniqueFrames.length) }
+    ]);
+
+    const chainResult = await verifyChainContinuity(json, uniqueFrames);
+
+    if (chainResult.valid) {
+        setResult('qrChainResult', 'pass', 'QR CHAIN VALID', [
+            { label: 'Chain Links', value: chainResult.matches + '/' + chainResult.checked + ' verified' },
+            { label: 'Algorithm', value: 'SHA-256 iterative chain' }
+        ]);
+    } else {
+        setResult('qrChainResult', 'fail', 'QR CHAIN BROKEN', [
+            { label: 'Break At', value: 'Frame ' + chainResult.breakAt },
+            { label: 'Expected Prefix', value: chainResult.expected },
+            { label: 'Got Prefix', value: chainResult.got }
+        ]);
+    }
+}
+
 // ─── Verification Pipeline ───────────────────────────────────────────────────
 
 async function runVerification(json, level) {
@@ -374,10 +550,12 @@ async function runVerification(json, level) {
         ]);
     }
 
-    // Step 3: QR Chain (L3 only — placeholder for next task)
+    // Step 3: QR Chain (L3 only)
     if (level === 'L3' && mediaFile) {
-        setResult('qrChainResult', 'skip', 'QR CHAIN', [
-            { value: 'QR chain verification available in next update.' }
+        await verifyQRChain(json, mediaFile);
+    } else if (level === 'L3') {
+        setResult('qrChainResult', 'fail', 'VIDEO FILE MISSING', [
+            { value: 'No video file for QR chain verification.' }
         ]);
     } else {
         setResult('qrChainResult', 'skip', 'QR CHAIN', [
