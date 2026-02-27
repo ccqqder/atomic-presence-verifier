@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atomic Presence Verifier</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><span class="logo">██</span> ATOMIC PRESENCE VERIFIER</h1>
+            <p class="subtitle">Open-source evidence verification</p>
+        </header>
+
+        <section id="dropZone" class="drop-zone">
+            <div class="drop-zone-content">
+                <p class="drop-icon">⬆</p>
+                <p class="drop-text">Drop evidence files here</p>
+                <p class="drop-hint">.evidence.json + media file | .session.json (Level 1)</p>
+                <label class="file-select-btn">
+                    SELECT FILES
+                    <input type="file" id="fileInput" multiple accept=".json,.m4a,.mp4,.mov" hidden>
+                </label>
+            </div>
+        </section>
+
+        <section id="fileInfo" class="file-info hidden"></section>
+
+        <section id="results" class="results hidden">
+            <div id="signatureResult" class="result-card"></div>
+            <div id="checksumResult" class="result-card"></div>
+            <div id="qrChainResult" class="result-card"></div>
+        </section>
+
+        <section id="details" class="details hidden">
+            <h3>EVIDENCE DETAILS</h3>
+            <pre id="evidenceDetails"></pre>
+        </section>
+
+        <footer>
+            <p>All verification runs locally in your browser. No files or data are uploaded.</p>
+            <p>Algorithm: SHA-256 + Ed25519 | <a href="https://github.com/ccqqder/atomic-presence-verifier" target="_blank" rel="noopener">Source Code</a></p>
+        </footer>
+    </div>
+
+    <script type="module" src="js/verifier.js"></script>
+</body>
+</html>

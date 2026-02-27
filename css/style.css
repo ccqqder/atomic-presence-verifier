@@ -1,0 +1,395 @@
+/* ============================================================
+   Atomic Presence Verifier — Terminal / Cybersecurity Theme
+   ============================================================ */
+
+:root {
+    --bg: #0a0a0a;
+    --surface: #1a1a1a;
+    --surface-elevated: #242424;
+    --green: #00ff41;
+    --dim-green: #2d6b3f;
+    --muted-green: #4a7c59;
+    --red: #ff4444;
+    --yellow: #ffcc00;
+    --text-primary: #e0e0e0;
+    --text-secondary: #888888;
+    --text-tertiary: #555555;
+    --font-mono: 'SF Mono', 'Menlo', 'Consolas', 'Liberation Mono', monospace;
+    --radius: 12px;
+}
+
+/* ---- Reset & Base ---- */
+
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+}
+
+body {
+    font-family: var(--font-mono);
+    background: var(--bg);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+    padding: 24px 16px;
+}
+
+/* ---- Container ---- */
+
+.container {
+    max-width: 640px;
+    margin: 0 auto;
+}
+
+/* ---- Header ---- */
+
+header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+header h1 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--green);
+    margin-bottom: 4px;
+}
+
+header .logo {
+    opacity: 0.7;
+}
+
+header .subtitle {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    letter-spacing: 0.04em;
+}
+
+/* ---- Drop Zone ---- */
+
+.drop-zone {
+    border: 2px dashed var(--text-tertiary);
+    border-radius: var(--radius);
+    background: var(--surface);
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+
+.drop-zone:hover {
+    border-color: var(--muted-green);
+}
+
+.drop-zone.drag-over {
+    border-color: var(--green);
+    background: rgba(0, 255, 65, 0.04);
+    box-shadow: 0 0 24px rgba(0, 255, 65, 0.08);
+}
+
+.drop-zone-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.drop-icon {
+    font-size: 2rem;
+    color: var(--text-tertiary);
+    transition: color 0.2s;
+}
+
+.drag-over .drop-icon {
+    color: var(--green);
+}
+
+.drop-text {
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.drop-hint {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+}
+
+/* ---- File Select Button ---- */
+
+.file-select-btn {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 10px 28px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--bg);
+    background: var(--green);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+}
+
+.file-select-btn:hover {
+    opacity: 0.85;
+}
+
+.file-select-btn:active {
+    transform: scale(0.97);
+}
+
+/* ---- File Info ---- */
+
+.file-info {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-top: 20px;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.file-info .file-name {
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.file-info .file-meta {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+}
+
+/* ---- Results ---- */
+
+.results {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.result-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    border-left: 4px solid var(--text-tertiary);
+    transition: border-color 0.3s;
+}
+
+.result-card.pass {
+    border-left-color: var(--green);
+}
+
+.result-card.fail {
+    border-left-color: var(--red);
+}
+
+.result-card.running {
+    border-left-color: var(--yellow);
+}
+
+.result-card .result-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+}
+
+.result-card .result-status {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.result-card.pass .result-status {
+    color: var(--green);
+}
+
+.result-card.fail .result-status {
+    color: var(--red);
+}
+
+.result-card.running .result-status {
+    color: var(--yellow);
+}
+
+.result-card .result-detail {
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+    word-break: break-all;
+}
+
+/* ---- Progress Bar ---- */
+
+.progress-bar {
+    width: 100%;
+    height: 4px;
+    background: var(--surface-elevated);
+    border-radius: 2px;
+    margin-top: 8px;
+    overflow: hidden;
+}
+
+.progress-bar .progress-fill {
+    height: 100%;
+    background: var(--yellow);
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+.progress-bar .progress-fill.complete {
+    background: var(--green);
+}
+
+.progress-bar .progress-fill.error {
+    background: var(--red);
+}
+
+/* ---- Details ---- */
+
+.details {
+    margin-top: 20px;
+}
+
+.details h3 {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+}
+
+.details pre {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    font-size: 0.75rem;
+    line-height: 1.7;
+    color: var(--text-secondary);
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* ---- Reset Button ---- */
+
+.reset-btn {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 10px 28px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--text-secondary);
+    background: var(--surface);
+    border: 1px solid var(--text-tertiary);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s;
+    text-align: center;
+    width: 100%;
+}
+
+.reset-btn:hover {
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
+}
+
+.reset-btn:active {
+    transform: scale(0.98);
+}
+
+/* ---- Footer ---- */
+
+footer {
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--surface-elevated);
+    text-align: center;
+}
+
+footer p {
+    font-size: 0.7rem;
+    color: var(--text-tertiary);
+    line-height: 1.8;
+}
+
+footer a {
+    color: var(--muted-green);
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+footer a:hover {
+    color: var(--green);
+}
+
+/* ---- Utility ---- */
+
+.hidden {
+    display: none !important;
+}
+
+/* ---- Scrollbar ---- */
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--text-tertiary);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
+}
+
+/* ---- Responsive ---- */
+
+@media (max-width: 480px) {
+    body {
+        padding: 16px 12px;
+    }
+
+    header h1 {
+        font-size: 0.9rem;
+    }
+
+    .drop-zone {
+        padding: 36px 16px;
+    }
+
+    .result-card {
+        padding: 14px 16px;
+    }
+
+    .details pre {
+        padding: 12px 14px;
+        font-size: 0.7rem;
+    }
+}
