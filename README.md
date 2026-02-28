@@ -66,4 +66,4 @@ For Level 2 (audio) and Level 3 (video), the SHA-256 checksum of the media file 
 
 ## License
 
-MIT
+[AGPL-3.0](LICENSE) — You may use, modify, and redistribute this software, but any modified version must also be made available under the same license. This prevents tampered verifiers from being deployed without public source code.
